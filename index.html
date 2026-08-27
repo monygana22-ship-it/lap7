@@ -1,126 +1,114 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>معركة العناصر - خفيفة</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>معركة العناصر - سهلة وممتعة</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Cairo',sans-serif}
-body{background:#0a0e18;overflow:hidden;touch-action:none}
-#cv{position:fixed;inset:0;width:100%;height:100%}
-.hud{position:fixed;inset:0;pointer-events:none}
-.hud>*{pointer-events:auto}
-.top{position:absolute;top:8px;left:8px;right:8px;height:48px;background:#000a;border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;color:#fff;font-size:12px;font-weight:900}
-.logo{position:absolute;top:64px;left:8px;width:56px;height:56px;background:#000;border:2px solid #F2A900;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#F2A900;font-weight:900;font-size:10px;text-align:center;line-height:1}
-.joy{position:absolute;bottom:12px;left:12px;width:90px;height:90px;background:rgba(255,255,255,.08);border-radius:50%}
-.stick{width:44px;height:44px;background:#fff;border-radius:50%;position:absolute;top:23px;left:23px}
-.mini{position:absolute;top:64px;right:8px;width:96px;height:96px;background:#000a;border-radius:10px;overflow:hidden}
-.modal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:20;padding:12px}
-.card{width:100%;max-width:340px;background:#141928;border:2px solid #F2A900;border-radius:16px;padding:14px;text-align:center;color:#fff}
-.btn{width:100%;height:44px;border-radius:10px;border:none;font-weight:900;margin-top:6px}
+body{background:#0a0e18;overflow:hidden}
+.bg{position:fixed;inset:0;background:radial-gradient(at 50% 0%, #1e3a5a 0%, #0a0e18 70%)}
+.logo{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#000;border:2px solid #F2A900;border-radius:50px;padding:6px 16px;color:#F2A900;font-weight:900;font-size:12px;z-index:10;box-shadow:0 0 20px #F2A90088}
+.score{position:fixed;top:10px;right:10px;background:#000a;border-radius:12px;padding:8px 12px;color:#fff;font-weight:900;font-size:13px;z-index:10}
+.island{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:radial-gradient(circle at 30% 30%, #1a2f4a, #0f1d35);border:3px solid #ffffff15;border-radius:50%;box-shadow:0 0 80px #000, inset 0 0 40px #000}
+.crate{position:absolute;width:64px;height:64px;background:linear-gradient(#F2A900,#ff8c00);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#000;cursor:pointer;animation:float 2s infinite;box-shadow:0 6px 0 #b36e00, 0 10px 20px #0008;transition:.2s}
+.crate:active{transform:scale(.9)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.modal{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.card{background:#141928;border:2px solid #F2A900;border-radius:20px;padding:18px;max-width:340px;width:100%;text-align:center;color:#fff;animation:pop .3s}
+@keyframes pop{0%{transform:scale(.7)}100%{transform:scale(1)}}
+.btn{width:100%;height:48px;border-radius:12px;border:none;font-weight:900;font-size:14px;margin-top:8px;cursor:pointer}
+.confetti{position:fixed;top:-10px;width:8px;height:8px;pointer-events:none;z-index:30}
 </style>
 </head>
 <body>
-<canvas id="cv"></canvas>
-<div class="hud">
-<div class="top"><span>❤️ <b id="hp">100</b> 🛡️ <b id="sh">0</b> ⭐ <b id="sc">0</b></span><span id="cnt">0/6</span><button onclick="muted=!muted" style="background:#fff2;border:none;border-radius:6px;padding:4px 8px;color:#fff">🔊</button></div>
-<div class="logo">Fe<br>VS<br>O</div>
-<div class="mini"><canvas id="mini" width="96" height="96"></canvas></div>
-<div class="joy" id="joy"><div class="stick" id="stk"></div></div>
-</div>
+<div class="bg"></div>
+<div class="logo">🏝️ Fe VS O - BATTLEGROUNDS</div>
+<div class="score">⭐ <span id="sc">0</span> | 📦 <span id="cnt">0/6</span></div>
+<div class="island" id="island"></div>
 <div class="modal" id="md"><div class="card" id="cd"></div></div>
+
 <script>
-let muted=false,actx,master;
-function aInit(){if(actx) return; actx=new(window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=.25; master.connect(actx.destination);}
-function aOk(){if(muted) return; aInit(); const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=800; g.gain.setValueAtTime(.3,actx.currentTime); g.gain.exponentialRampToValueAtTime(.01,actx.currentTime+.3); o.connect(g); g.connect(master); o.start(); o.stop(actx.currentTime+.3);}
-function aNo(){if(muted) return; aInit(); const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=150; g.gain.setValueAtTime(.4,actx.currentTime); g.gain.exponentialRampToValueAtTime(.01,actx.currentTime+.4); o.connect(g); g.connect(master); o.start(); o.stop(actx.currentTime+.4);}
+const ELS=[
+{s:'Fe',n:'الحديد',m:true,j:'ده بيتعمل منه باب الشقة! 🔑'},
+{s:'Al',n:'الألومنيوم',m:true,j:'علبة البيبسي دي منه! 🥫'},
+{s:'Cu',n:'النحاس',m:true,j:'سلك الشاحن بتاعك! 🔌'},
+{s:'Au',n:'الذهب',m:true,j:'ده بتاع الشبكة! 💍'},
+{s:'S',n:'الكبريت',m:false,j:'ريحته وحشة زي البيض الفاسد! 🤢'},
+{s:'O',n:'الأكسجين',m:false,j:'بتتنفسه كل ثانية! 😮‍💨'},
+{s:'C',n:'الكربون',m:false,j:'قلمك الرصاص! ✏️'},
+{s:'Cl',n:'الكلور',m:false,j:'بتاع البيسين! 🏊‍♂️'},
+];
+let score=0, collected=[], crates=[];
+const island=document.getElementById('island');
 
-const cv=document.getElementById('cv'),cx=cv.getContext('2d'), MAP=2000;
-function rs(){ cv.width=innerWidth; cv.height=innerHeight; } rs(); addEventListener('resize',rs);
-let p={x:1000,y:1000,vx:0,vy:0,hp:100,sh:0,sc:0,cl:[]}, cam={x:1000,y:1000}, keys={}, joy={x:0,y:0}, zone={x:1000,y:1000,r:900}, inM=false, cur=null;
-const ELS=[{s:'Fe',n:'الحديد',m:true},{s:'Al',n:'الالومنيوم',m:true},{s:'Cu',n:'النحاس',m:true},{s:'S',n:'الكبريت',m:false},{s:'O',n:'الاكسجين',m:false},{s:'C',n:'الكربون',m:false},{s:'Na',n:'الصوديوم',m:true},{s:'Au',n:'الذهب',m:true}];
-let cr=ELS.slice(0,6).map((e,i)=>({x:200+Math.random()*1600,y:200+Math.random()*1600,e,op:false}));
-
-function upd(){
-if(inM) return;
-let mx=(keys['w']||keys['ArrowUp']?-1:0)+(keys['s']||keys['ArrowDown']?1:0);
-let my=(keys['a']||keys['ArrowLeft']?-1:0)+(keys['d']||keys['ArrowRight']?1:0);
-my=-mx; mx=joy.x*1.5 + (keys['d']?1:0) + (keys['a']?-1:0);
-mx=joy.x; my=joy.y;
-if(keys['w']) my=-1; if(keys['s']) my=1; if(keys['a']) mx=-1; if(keys['d']) mx=1;
-let l=Math.hypot(mx,my); if(l>0.1){ p.vx=mx/l*5; p.vy=my/l*5; } else { p.vx*=0.8; p.vy*=0.8; }
-p.x=Math.max(0,Math.min(MAP,p.x+p.vx)); p.y=Math.max(0,Math.min(MAP,p.y+p.vy));
-cam.x+=(p.x-cam.x)*0.15; cam.y+=(p.y-cam.y)*0.15;
-zone.r=Math.max(150,zone.r-0.08);
-if(Math.hypot(p.x-zone.x,p.y-zone.y)>zone.r) p.hp-=0.2;
-if(p.hp<=0){ alert('خسرت!'); location.reload(); }
-cr.forEach(c=>{ if(!c.op && Math.hypot(p.x-c.x,p.y-c.y)<70) openC(c); });
-document.getElementById('hp').textContent=Math.round(p.hp); document.getElementById('sh').textContent=p.sh; document.getElementById('sc').textContent=p.sc; document.getElementById('cnt').textContent=p.cl.length+'/6';
-}
-function draw(){
-cx.fillStyle='#0f1a2e'; cx.fillRect(0,0,cv.width,cv.height);
-const ox=cv.width/2-cam.x, oy=cv.height/2-cam.y;
-cx.fillStyle='#122040'; cx.fillRect(ox,oy,MAP,MAP);
-// zone
-cx.strokeStyle='#ef4444aa'; cx.lineWidth=2; cx.beginPath(); cx.arc(zone.x+ox,zone.y+oy,zone.r,0,Math.PI*2); cx.stroke();
-// crates - simple
-cr.forEach(c=>{
-if(c.op) return;
-cx.fillStyle='#F2A900'; cx.fillRect(c.x+ox-12,c.y+oy-12,24,24);
-cx.fillStyle='#000'; cx.font='bold 12px Arial'; cx.fillText(c.e.s,c.x+ox-8,c.y+oy+4);
+function spawn(){
+island.innerHTML='';
+crates=[];
+ELS.slice(0,6).forEach((el,i)=>{
+const ang=(i/6)*Math.PI*2, r=90+Math.random()*20;
+const x=160+Math.cos(ang)*r-32, y=160+Math.sin(ang)*r-32;
+const d=document.createElement('div');
+d.className='crate'; d.textContent=el.s; d.style.left=x+'px'; d.style.top=y+'px';
+d.onclick=()=>openCrate(el,d);
+island.appendChild(d);
+crates.push(d);
 });
-// player - simple circle
-cx.fillStyle='#fff'; cx.beginPath(); cx.arc(p.x+ox,p.y+oy,10,0,Math.PI*2); cx.fill();
-cx.fillStyle='#F2A900'; cx.beginPath(); cx.arc(p.x+ox,p.y+oy,7,0,Math.PI*2); cx.fill();
 }
-function openC(c){
-inM=true; cur=c;
-const md=document.getElementById('md'); md.style.display='flex';
+function openCrate(el,div){
+if(div.dataset.open) return;
+document.getElementById('md').style.display='flex';
 document.getElementById('cd').innerHTML=`
-<div style="color:#F2A900;font-size:10px;font-weight:900">LOOT CRATE - ${c.e.s}</div>
-<div style="width:64px;height:64px;margin:10px auto;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:22px">${c.e.s}</div>
-<div style="font-weight:900">${c.e.n}</div>
-<div style="font-size:11px;opacity:.6;margin-top:4px">اختبر بسرعة: مطرقة ولا موصل؟</div>
-<div style="display:flex;gap:6px;margin-top:10px">
-<button onclick="tH()" style="flex:1;height:36px;border-radius:8px;background:#fff2;border:1px solid #fff2;color:#fff;font-size:11px">🔨 مطرقة</button>
-<button onclick="tL()" style="flex:1;height:36px;border-radius:8px;background:#fff2;border:1px solid #fff2;color:#fff;font-size:11px">💡 لمبة</button>
+<div style="font-size:32px">${el.m?'🔥':'🌫️'}</div>
+<div style="font-size:28px;font-weight:900;margin:6px 0">${el.s} - ${el.n}</div>
+<div style="background:#fff1;border-radius:10px;padding:8px;font-size:12px">${el.j}</div>
+<div style="margin-top:12px;background:#0008;border-radius:10px;padding:10px">
+<div style="font-size:11px;opacity:.7">لو ضربته بالشاكوش هيحصل ايه؟</div>
+<div style="display:flex;gap:8px;margin-top:8px">
+<button onclick="quick('bend')" style="flex:1;height:36px;border-radius:8px;background:#fff1;border:none;color:#fff">ينثني 😎</button>
+<button onclick="quick('break')" style="flex:1;height:36px;border-radius:8px;background:#fff1;border:none;color:#fff">يتكسر 💥</button>
 </div>
-<div id="rs" style="margin-top:8px;font-size:11px;min-height:16px"></div>
-<button onclick="ans(true)" class="btn" style="background:linear-gradient(#ffb86a,#ff6b35);color:#000">⚔️ فلز</button>
-<button onclick="ans(false)" class="btn" style="background:linear-gradient(#7ef9ff,#00d1ff);color:#000">🛡️ لا فلز</button>
+<div id="hint" style="margin-top:8px;font-size:11px;min-height:18px"></div>
+</div>
+<button onclick="ans(true)" class="btn" style="background:#ffb86a;color:#000">⚔️ فلز جامد</button>
+<button onclick="ans(false)" class="btn" style="background:#7ef9ff;color:#000">🛡️ مش فلز (لا فلز)</button>
 `;
-}
-window.tH=function(){ document.getElementById('rs').innerHTML=cur.e.m?'🔨 انثنى = فلز':'🔨 تفتت = لا فلز'; };
-window.tL=function(){ document.getElementById('rs').innerHTML=cur.e.m?'💡 نورت = فلز':'💡 ما نورتش = لا فلز'; };
-window.ans=function(v){
-const ok=v===cur.e.m;
-if(ok){ aOk(); p.sc+=20; p.sh+=5; p.cl.push(cur.e.s); cur.op=true; }
-else { aNo(); p.hp=Math.max(0,p.hp-15); }
-document.getElementById('md').style.display='none'; inM=false;
-if(p.cl.length>=6){ alert('🏆 كسبت! جمعت '+p.cl.join(',')); location.reload(); }
+window.currentEl=el; window.currentDiv=div;
+window.quick=(t)=>{
+const isBend=t==='bend';
+document.getElementById('hint').innerHTML=(isBend===el.m)?'✅ صح! الفلز بينثني':'❌ لا، اللافلز بيتكسر';
 };
-addEventListener('keydown',e=>keys[e.key]=true);
-addEventListener('keyup',e=>keys[e.key]=false);
-const joyEl=document.getElementById('joy'), stk=document.getElementById('stk');
-let dragging=false;
-joyEl.addEventListener('touchstart',e=>{ dragging=true; },{passive:false});
-addEventListener('touchmove',e=>{
-if(!dragging) return;
-const t=e.touches[0], r=joyEl.getBoundingClientRect();
-let x=t.clientX-(r.left+45), y=t.clientY-(r.top+45);
-let d=Math.hypot(x,y), m=30; if(d>m){ x=x/d*m; y=y/d*m; }
-stk.style.transform=`translate(${x}px,${y}px)`; joy.x=x/m; joy.y=y/m;
-},{passive:false});
-addEventListener('touchend',()=>{ dragging=false; joy.x=0; joy.y=0; stk.style.transform='translate(0,0)'; });
-joyEl.addEventListener('mousedown',()=>dragging=true);
-addEventListener('mousemove',e=>{
-if(!dragging||e.touches) return;
-const r=joyEl.getBoundingClientRect(); let x=e.clientX-(r.left+45), y=e.clientY-(r.top+45);
-let d=Math.hypot(x,y), m=30; if(d>m){ x=x/d*m; y=y/d*m; }
-stk.style.transform=`translate(${x}px,${y}px)`; joy.x=x/m; joy.y=y/m;
-});
-addEventListener('mouseup',()=>{ dragging=false; joy.x=0; joy.y=0; stk.style.transform='translate(0,0)'; });
-(function loop(){ upd(); draw(); requestAnimationFrame(loop); })();
+window.ans=(isMetal)=>{
+const ok=isMetal===currentEl.m;
+if(ok){
+score+=20; collected.push(currentEl.s);
+currentDiv.style.background='#39ff14'; currentDiv.textContent='✅';
+currentDiv.dataset.open=1;
+confetti();
+document.getElementById('md').innerHTML=`<div class="card"><div style="font-size:40px">🎉</div><h2>عاش يا بطل!</h2><p style="font-size:13px;margin-top:6px">نهبت ${currentEl.n} الأسطوري!</p><p style="font-size:11px;opacity:.6">${currentEl.j}</p><button class="btn" style="background:#fff;color:#000;margin-top:12px" onclick="closeM()">كمل لوت 🔫</button></div>`;
+setTimeout(closeM,1200);
+} else {
+document.getElementById('hint').innerHTML=`😜 لا يا نوب! ده ${currentEl.m?'فلز':'لا فلز'} - جرب تاني`;
+navigator.vibrate&&navigator.vibrate(100);
+}
+document.getElementById('sc').textContent=score;
+document.getElementById('cnt').textContent=collected.length+'/6';
+if(collected.length>=6){ setTimeout(()=>{ alert('🏆 WINNER WINNER CHICKEN DINNER! 🍗\nجمعت: '+collected.join(', ')); location.reload(); },800); }
+};
+}
+function closeM(){ document.getElementById('md').style.display='none'; document.getElementById('md').innerHTML='<div class="card" id="cd"></div>'; }
+window.closeM=closeM;
+function confetti(){
+for(let i=0;i<20;i++){
+const c=document.createElement('div'); c.className='confetti';
+c.style.left=Math.random()*100+'vw'; c.style.background=['#F2A900','#39ff14','#ff4757','#70a1ff'][Math.floor(Math.random()*4)];
+c.style.animation=`fall ${0.8+Math.random()*0.8}s linear`; c.style.transform=`rotate(${Math.random()*360}deg)`;
+document.body.appendChild(c); setTimeout(()=>c.remove(),1200);
+}
+}
+const style=document.createElement('style'); style.textContent='@keyframes fall{to{transform:translateY(100vh) rotate(720deg)}}'; document.head.appendChild(style);
+spawn();
+document.getElementById('md').addEventListener('click',e=>{ if(e.target.id==='md') closeM(); });
 </script>
 </body>
 </html>
